@@ -1,231 +1,104 @@
-import 'package:eval_ex/expression.dart';
+import 'package:calculadora/logic/calculator.dart' as calc;
 import 'package:flutter/material.dart';
 
-//método necesario para retornar el último caracter del texto de un string cualquiera, se le añade a cualquier strings
-extension Strings on String {
-  String get last => isEmpty ? '' : this[length - 1];
-}
-
+/// Estado de la pantalla: texto, cursor y resultado. Las reglas de cálculo
+/// viven en `logic/calculator.dart`.
 class CalcProvider with ChangeNotifier {
-  String _result = '';
-  bool showResult = true;
-
   final controller = TextEditingController();
   final focusNode = FocusNode();
 
+  bool showResult = true;
+  String? error;
+  bool _justEvaluated = false;
+
+  String get input => controller.text;
+
   double get inputFontSize {
-    //obtener tamaño de letra del resultado, dependiendo de la cantidad de caracteres que haya
-    if (controller.text.length < 8) return 50;
-    if (controller.text.length < 12) return 44;
-    if (controller.text.length < 16) return 38;
+    final length = input.length;
+    if (length < 8) return 56;
+    if (length < 12) return 46;
+    if (length < 16) return 38;
     return 30;
   }
 
-  //propiedades para acceder a estos datos desde terceros
-  String get input => controller.text;
-
-  String get result => _result;
-
-  String get getResult {
+  /// Resultado en vivo; vacío si la expresión está incompleta o es un número suelto.
+  String get preview {
+    if (!showResult) return '';
     try {
-      //Este método evalúa en tiempo real los resultados en la y los actualiza
-      final eval = num.parse(
-          Expression(fixedCalc).eval()!.toDouble().toStringAsFixed(4));
-      //pasarlo por el fixedCalc y redondearlo a 4 lugares luego de la coma
-      if (eval.toInt() == eval) return eval.toInt().toString().toUpperCase();
-      //Si es entero retornarlo asi, sino con coma
-      return eval.toString().toUpperCase();
-    } catch (err) {
-      return ''; //Caso contrario mostrarlo vacío y capturar cualquier error, shhh
+      final result = calc.format(calc.evaluate(input));
+      return result == input ? '' : result;
+    } catch (_) {
+      return '';
     }
   }
 
-  //Método para equilibrar ()
-  String get fixedCalc {
-    //Este método es para detectar cuantos paréntesis '(' y equilibrarlos con ')' y asi poder retornar el cálculo
-    if ('('.allMatches(controller.text).length >=
-        ')'.allMatches(controller.text).length) {
-      return (controller.text.contains('%'))
-          ? calcPercentage(controller.text)
-          : controller.text +
-              ')' *
-                  ('('.allMatches(controller.text).length -
-                      ')'.allMatches(controller.text).length);
-    }
-    //Si todo está bien retorna el valor normal
-    return controller.text;
-  }
-
-  //Método para calcular el porcentaje
-  String calcPercentage(String valores) {
-    int indice = valores.indexOf('%'); //busca el indice donde esta el %
-    double valorDer = 0;
-    String leftPart = valores.substring(0, indice),
-        rightPart = valores.substring(indice + 1, valores.length);
-    //Divide el texto por ahi
-
-    double valorIzq = num.parse(leftPart.substring(
-            leftPart.lastIndexOf(RegExp(r'[-+/*]')) + 1, leftPart.length))
-        .toDouble(); //perfect
-
-    if (rightPart.contains(RegExp(r'[-+/*]'))) {
-      //si la parte derecha no contiene ningun signo la asigna
-      //completa como segundo parametro, sino la pica por el simbolo y la añade
-      valorDer = num.parse(
-              rightPart.substring(0, rightPart.indexOf(RegExp(r'[-+/*]'))))
-          .toDouble();
-    } else {
-      valorDer = num.parse(rightPart).toDouble();
-    }
-
-    String result = ((valorIzq * valorDer) / 100).toString();
-    //concatena la parte izquierda del
-    String value = leftPart.substring(
-            0, leftPart.lastIndexOf(RegExp(r'[-+/*]')) + 1) +
-        result +
-        ((rightPart
-                .isNotEmpty) //si el miembro derecho esta vacio, le pone 0 para que realice el calculo, sino lo pone normal
-            ? rightPart.substring(((rightPart.indexOf(RegExp(r'[-+/*]'))) == -1)
-                ? 0
-                : rightPart.indexOf(RegExp(r'[-+/*]')))
-            : '0');
-    //Lo hice luego de 4 horas y no se como funciona bien la condición, mejor no toques nada y disfruta, pero es algo así
-    return value;
-  }
-
-  //Botón AC Correcto
-  void allClear() {
-    controller.clear(); //limpia el controlador y oculta el resultado
-    showResult = false;
-    notifyListeners();
-  }
-
-  //Botón DEL Correcto
-  void delete() {
-    showResult = true;
-    //extrae el texto del controlador
-    String textValue = controller.text;
-    //extrae la posicion del cursor
-    int cursorPosition = controller.selection.base.offset;
-
-    //Si no esta marcado la pone en 0
-    if (cursorPosition == -1) cursorPosition = 0;
-    //Si no hay texto, o la posición del cursor es 0, sale del método
-    if (textValue.isEmpty || cursorPosition == 0) return;
-
-    //divide el texto en 2, a la derecha e izquierda de la posicion del cursor
-    String rightPart = controller.text.substring(cursorPosition),
-        leftPart = controller.text.substring(0, cursorPosition);
-
-    // a la parte izquierda le resta el último caracter
-    leftPart = leftPart.substring(0, leftPart.length - 1);
-
-    //luego se une las dos partes en el texto del controller
-    controller.text = leftPart + rightPart;
-
-    //Estas líneas son para volver a dejar el cursor en donde borró, y asi poder seguir borrando
-    controller.selection = TextSelection(
-      baseOffset: cursorPosition - 1,
-      extentOffset: cursorPosition - 1,
-    );
-
-    notifyListeners();
-  }
-
-  //Botón tanto para números, como simbolos
-  void add(String text) async {
-    showResult = true; //muestra el resultado
-
-    int cursorPos =
-        controller.selection.base.offset; //Extrae la posición del cursor
-
-    if (cursorPos == -1) cursorPos = 0;
-
-    //divide el texto en 2, a la derecha e izquierda de la posicion del cursor
-    String rightPart = controller.text.substring(cursorPos),
-        leftPart = controller.text.substring(0, cursorPos);
-
-    //esta condición es para analizar si donde se va a poner el número le predecede un ) para poner un *
-    if (leftPart.endsWith(')') && isNumber(text)) {
-      controller.text = '$leftPart*$text$rightPart';
-    } else {
-      //agrega el texto entre las dos partes
-      controller.text = '$leftPart$text$rightPart';
-    }
-
-    //deja el cursor donde estaba, para poder seguir agregando
-    controller.selection = TextSelection(
-      baseOffset: cursorPos + text.length,
-      extentOffset: cursorPos + text.length,
-    );
-
-    notifyListeners();
-
-    await Future.delayed(const Duration(milliseconds: 100));
-  }
-
-  //Botón = Correcto
-  void equal() {
-    //Si existe resultado, asigna el resultado y lo asigna al controlador para que lo muestre
-    if (getResult.isNotEmpty) {
-      _result = getResult;
-      controller.text = getResult;
-    }
-    //Devuelve el cursor al inicio para poder seguir tecleando
-    controller.selection = TextSelection(
-      baseOffset: getResult.length,
-      extentOffset: getResult.length,
-    );
-    //Oculta la prediccion de resultado
-    showResult = false;
-    notifyListeners();
-  }
-
-  //TODO: Icono
-
-  //Botones -+/* Añadir operador Correcto
-  void addOperator(String operador) {
-    if (operador == '-') {
-      //Si es - si lo deja poner y sale del método
-      add(operador);
-      return;
-    }
-    //Si está vacía la caja de texto o hay un operador ya antes de este y no es - o +, entonces sale del método
-    if (controller.text.isEmpty ||
-        (!isMinusPlus(operador) && isOperator(controller.text.last))) return;
-    add(operador); //Sino, añade el operador
-  }
-
-  //Botón () Correcto
-  void parenthesisBehavior() {
+  /// Sustituye la selección (o inserta en el cursor) con lo que devuelva [change].
+  void _edit(String Function(String left) change, {bool deleting = false}) {
     final text = controller.text;
-    //Si el ultimo valor, es diferente de (, no es un operador, y hay mas '(' que ')', entonces coloca )
-    if (text.last != '(' &&
-        !isOperator(text.last) &&
-        '('.allMatches(controller.text).length >
-            ')'.allMatches(controller.text).length) {
-      add(')');
-      //si no esta vacío y el ultimo operador es un número, coloca un *(
-    } else if (text.isNotEmpty && !isOperator(text.last) && text.last != '(') {
-      add('*(');
-    } else {
-      add('('); //Sino coloca paréntesis abierto (
+    final sel = controller.selection;
+    final start = sel.isValid ? sel.start.clamp(0, text.length) : text.length;
+    final end = sel.isValid ? sel.end.clamp(0, text.length) : text.length;
+    var left = text.substring(0, start);
+    final right = text.substring(end);
+
+    if (deleting && start == end && left.isNotEmpty) {
+      left = left.substring(0, left.length - 1);
+    } else if (!deleting) {
+      left = change(left);
     }
+    controller.value = TextEditingValue(
+      text: left + right,
+      selection: TextSelection.collapsed(offset: left.length),
+    );
+    error = null;
+    showResult = true;
+    _justEvaluated = false;
+    notifyListeners();
   }
 
-  //Método para saber si es un operador
-  bool isOperator(String operador) {
-    return RegExp(r'[-+/*%]').hasMatch(operador);
+  void allClear() {
+    controller.clear();
+    error = null;
+    showResult = false;
+    _justEvaluated = false;
+    notifyListeners();
   }
 
-//[/*-+%]
-  //Retorna falso solo si es - o +
-  bool isMinusPlus(String operador) {
-    return RegExp(r'[-+]').hasMatch(operador);
+  void delete() => _edit((left) => left, deleting: true);
+
+  void addDigit(String digit) {
+    // Tras "=", un número nuevo empieza otra operación; un operador la encadena.
+    if (_justEvaluated) controller.clear();
+    _edit((left) => calc.insertDigit(left, digit));
   }
 
-//Método para saber si es un número
-  bool isNumber(String operador) {
-    return RegExp(r'^[0-9]+$').hasMatch(operador);
+  void addOperator(String op) => _edit((left) => calc.insertOperator(left, op));
+
+  void parenthesisBehavior() => _edit(calc.insertParenthesis);
+
+  void equal() {
+    if (input.isEmpty) return;
+    try {
+      final result = calc.format(calc.evaluate(input));
+      controller.value = TextEditingValue(
+        text: result,
+        selection: TextSelection.collapsed(offset: result.length),
+      );
+      _justEvaluated = true;
+      showResult = false;
+      error = null;
+    } on calc.CalcError catch (e) {
+      error = e.message;
+    } on FormatException {
+      error = 'Expresión incompleta';
+    }
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    focusNode.dispose();
+    super.dispose();
   }
 }
