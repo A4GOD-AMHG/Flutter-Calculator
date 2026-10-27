@@ -9,12 +9,13 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = PreferenciasUsuario();
   await prefs.initPrefs();
-  runApp(MultiProvider(
-    providers: [
-      ChangeNotifierProvider(create: (_) => CalcProvider()),
-      ChangeNotifierProvider(
-          create: (_) => ThemeProvider(isDarkmode: prefs.isDarkmode)),
-    ],
-    child: const MyApp(),
-  ));
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => CalcProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider(prefs)),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }

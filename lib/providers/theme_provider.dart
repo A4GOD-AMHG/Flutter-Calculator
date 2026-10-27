@@ -1,18 +1,18 @@
+import 'package:calculadora/shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 
 class ThemeProvider extends ChangeNotifier {
-  ThemeData currentTheme;
+  final PreferenciasUsuario _prefs;
+  bool _isDarkmode;
 
-  ThemeProvider({required bool isDarkmode})
-      : currentTheme = isDarkmode ? ThemeData.dark() : ThemeData.light();
+  ThemeProvider(this._prefs) : _isDarkmode = _prefs.isDarkmode;
 
-  setLightMode() {
-    currentTheme = ThemeData.light();
-    notifyListeners();
-  }
+  bool get isDarkmode => _isDarkmode;
+  ThemeMode get themeMode => _isDarkmode ? ThemeMode.dark : ThemeMode.light;
 
-  setDarkmode() {
-    currentTheme = ThemeData.dark();
+  void toggle() {
+    _isDarkmode = !_isDarkmode;
+    _prefs.isDarkmode = _isDarkmode;
     notifyListeners();
   }
 }

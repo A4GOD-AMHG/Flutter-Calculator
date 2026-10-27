@@ -3,25 +3,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 class PreferenciasUsuario {
   static final PreferenciasUsuario _instancia = PreferenciasUsuario._internal();
 
-  factory PreferenciasUsuario() {
-    return _instancia;
-  }
+  factory PreferenciasUsuario() => _instancia;
 
   PreferenciasUsuario._internal();
 
-  late SharedPreferences? _prefs;
-  static bool _isDarkmode = false;
+  SharedPreferences? _prefs;
 
-  initPrefs() async {
+  Future<void> initPrefs() async {
     _prefs = await SharedPreferences.getInstance();
   }
 
-  bool get isDarkmode {
-    return _prefs!.getBool('isDarkmode') ?? _isDarkmode;
-  }
+  // Por defecto oscuro, como la app original.
+  bool get isDarkmode => _prefs?.getBool('isDarkmode') ?? true;
 
-  set isDarkmode(bool value) {
-    _isDarkmode = value;
-    _prefs!.setBool('isDarkmode', value);
-  }
+  set isDarkmode(bool value) => _prefs?.setBool('isDarkmode', value);
 }

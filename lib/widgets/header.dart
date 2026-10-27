@@ -1,252 +1,122 @@
 import 'package:calculadora/providers/calc_provider.dart';
-import 'package:calculadora/shared_preferences/shared_preferences.dart';
 import 'package:calculadora/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class Header extends StatelessWidget {
-  const Header({
-    super.key,
-    required TextEditingController controller,
-  }) : _controller = controller;
-
-  final TextEditingController _controller;
+  const Header({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final calc = Provider.of<CalcProvider>(context);
-    final prefs = PreferenciasUsuario();
-    final theme = Provider.of<ThemeProvider>(context);
-    return Builder(
-      builder: (context) {
-        return Container(
-            height: 250.0,
-            width: double.infinity,
-            decoration: BoxDecoration(
-                color: (prefs.isDarkmode)
-                    ? const Color.fromARGB(175, 255, 255, 255)
-                    : const Color.fromARGB(120, 0, 0, 0),
-                borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(40),
-                    bottomRight: Radius.circular(40)),
-                boxShadow: const <BoxShadow>[
-                  BoxShadow(
-                      color: Colors.white24,
-                      blurRadius: 10.0,
-                      spreadRadius: 1.0,
-                      offset: Offset(0, 0)),
-                ]),
-            child: SafeArea(
-              child: Column(
+    final calc = context.watch<CalcProvider>();
+    final theme = context.watch<ThemeProvider>();
+    final colors = Theme.of(context).colorScheme;
+    final error = calc.error;
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: colors.surfaceContainer,
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
+        boxShadow: [
+          BoxShadow(
+            color: colors.shadow.withValues(alpha: 0.15),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 8, 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 10),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          PopupMenuButton(
-                            padding: const EdgeInsets.all(15),
-                            color: Colors
-                                .white, //TODO: theme botoncitos y container trasero
-                            splashRadius: 5,
-                            shape: Border.all(width: 1, color: Colors.black),
-                            itemBuilder: (context) => [
-                              const PopupMenuItem(
-                                value: 1,
-                                child: Text(
-                                  'Modo Oscuro',
-                                  style: TextStyle(color: Colors.black),
-                                ),
-                              ),
-                              const PopupMenuItem(
-                                value: 2,
-                                child: Text(
-                                  'Acerca de',
-                                  style: TextStyle(color: Colors.black),
-                                ),
-                              ),
-                            ],
-                            onSelected: (value) {
-                              if (value == 2) {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => SimpleDialog(
-                                    title: const Padding(
-                                      padding: EdgeInsets.only(top: 20),
-                                      child: Center(child: Text('Información')),
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(20)),
-                                    titlePadding:
-                                        const EdgeInsets.only(left: 30),
-                                    children: [
-                                      Padding(
-                                        padding: const EdgeInsets.fromLTRB(
-                                            20, 5, 5, 5),
-                                        child: ListTile(
-                                          title: const Text(
-                                            "Alexis Manuel Hurtado García",
-                                            style: TextStyle(fontSize: 15),
-                                          ),
-                                          leading: IconButton(
-                                              onPressed: () {},
-                                              icon: const Icon(Icons.phone)),
-                                          subtitle: const Text("+53 55529865"),
-                                        ),
-                                      ),
-                                      TextButton(
-                                          onPressed: () {
-                                            Navigator.of(context).pop();
-                                          },
-                                          child: const Text('Cerrar'))
-                                    ],
-                                  ),
-                                );
-                              } else if (value == 1) {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => SimpleDialog(
-                                    title: const Padding(
-                                      padding: EdgeInsets.only(top: 20),
-                                      child: Center(child: Text('Modo oscuro')),
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(20)),
-                                    titlePadding:
-                                        const EdgeInsets.only(left: 20),
-                                    children: [
-                                      const SizedBox(
-                                        height: 30,
-                                      ),
-                                      Center(
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            GestureDetector(
-                                              onTap: () {
-                                                theme.setDarkmode();
-                                                prefs.isDarkmode = true;
-                                              },
-                                              child: Icon(
-                                                Icons.light_mode_outlined,
-                                                color: (prefs.isDarkmode)
-                                                    ? Colors.white
-                                                    : Colors.black,
-                                                size: 25,
-                                              ),
-                                            ),
-                                            const SizedBox(
-                                              width: 20,
-                                            ),
-                                            GestureDetector(
-                                              onTap: () {
-                                                theme.setLightMode();
-                                                prefs.isDarkmode = false;
-                                              },
-                                              child: Icon(
-                                                Icons.dark_mode_outlined,
-                                                color: (prefs.isDarkmode)
-                                                    ? Colors.black
-                                                    : Colors.white,
-                                                size: 25,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(
-                                        height: 30,
-                                      ),
-                                      TextButton(
-                                          onPressed: () {
-                                            Navigator.of(context).pop();
-                                          },
-                                          child: const Text('Cerrar'))
-                                    ],
-                                  ),
-                                );
-                              }
-                            },
-                          ),
-                        ],
-                      ),
+                  IconButton(
+                    tooltip: theme.isDarkmode ? 'Modo claro' : 'Modo oscuro',
+                    onPressed: theme.toggle,
+                    icon: Icon(
+                      theme.isDarkmode
+                          ? Icons.light_mode_outlined
+                          : Icons.dark_mode_outlined,
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 20, top: 15),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(left: 20),
-                                child: TextField(
-                                  decoration: const InputDecoration.collapsed(
-                                      hintText: ''),
-                                  readOnly: true,
-                                  autofocus: true,
-                                  showCursor: true,
-                                  controller: calc.controller,
-                                  focusNode: calc.focusNode,
-                                  textAlign: TextAlign.end,
-                                  style: TextStyle(
-                                    color: (prefs.isDarkmode)
-                                        ? Colors.black
-                                        : Colors.white,
-                                    fontSize: calc.inputFontSize,
-                                  ), //automatizar eso
-                                  cursorWidth: 2,
-                                  cursorColor: (prefs.isDarkmode)
-                                      ? Colors.black
-                                      : Colors.white,
-                                  cursorRadius: const Radius.circular(20),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(
-                          height: 20,
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.only(
-                                  left: 20, right: 20, top: 20),
-                              child: calc.getResult.isEmpty
-                                  ? const SizedBox.shrink()
-                                  : AnimatedDefaultTextStyle(
-                                      duration:
-                                          const Duration(milliseconds: 150),
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.normal,
-                                        fontSize: 24,
-                                        color: (prefs.isDarkmode)
-                                            ? Colors.black
-                                            : Colors.white,
-                                      ),
-                                      child: Text(
-                                        (calc.showResult) ? calc.getResult : '',
-                                        overflow: TextOverflow.ellipsis,
-                                      )),
-                            )
-                          ],
-                        ),
-                      ],
-                    ),
+                  PopupMenuButton<int>(
+                    tooltip: 'Más opciones',
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(value: 1, child: Text('Acerca de')),
+                    ],
+                    onSelected: (_) => _showAbout(context),
                   ),
                 ],
               ),
-            ));
-      },
+              const Spacer(),
+              Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: TextField(
+                  decoration: const InputDecoration.collapsed(hintText: '0'),
+                  readOnly: true,
+                  autofocus: true,
+                  showCursor: true,
+                  controller: calc.controller,
+                  focusNode: calc.focusNode,
+                  textAlign: TextAlign.end,
+                  style: TextStyle(
+                    color: colors.onSurface,
+                    fontSize: calc.inputFontSize,
+                    fontWeight: FontWeight.w300,
+                  ),
+                  cursorWidth: 2,
+                  cursorColor: colors.primary,
+                  cursorRadius: const Radius.circular(20),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 150),
+                  child: Text(
+                    error ?? calc.preview,
+                    key: ValueKey(error ?? calc.preview),
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 24,
+                      color: error != null
+                          ? colors.error
+                          : colors.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAbout(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Información', textAlign: TextAlign.center),
+        children: [
+          const ListTile(
+            leading: Icon(Icons.phone),
+            title: Text('Alexis Manuel Hurtado García'),
+            subtitle: Text('+53 55529865'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cerrar'),
+          ),
+        ],
+      ),
     );
   }
 }
